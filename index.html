@@ -423,6 +423,8 @@ let AC_DB = [], AC_DBF = [];
 
 // --- ENTRADA ---
 const EN_SHEET = 'https://docs.google.com/spreadsheets/d/1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA/export?format=csv&gid=0';
+/* LIMITE POR LINHA: ajuste se suas facções entregam mais de 2000 peças num único lançamento */
+let EN_MAX_QTD_POR_LINHA = 2000;
 const META_DIA = 2500;
 const META_SEM = 12500;
 const PALETTE = ['#6c63ff','#38bdf8','#00e5a0','#f472b6','#ffb840','#ff4d6d','#34d399','#a78bfa','#fbbf24','#60a5fa','#fb923c','#4ade80','#e879f9','#67e8f9','#fde68a'];
@@ -890,7 +892,8 @@ function buildTabsEN(){
     <button id="enBD" onclick="tabEN('D')">📊 Produtividade</button>
     <button id="enBP" onclick="tabEN('P')">📦 Produtos</button>
     <button id="enBF" onclick="tabEN('F')">🏭 Facções</button>
-    <button id="enBT" onclick="tabEN('T')">🏆 Ranking TV</button>`;
+    <button id="enBT" onclick="tabEN('T')">🏆 Ranking TV</button>
+    <button onclick="showENDebug()" style="border-color:rgba(255,184,64,.3);color:var(--w)" title="Inspecionar CSV carregado">🔍 Debug</button>`;
   setTabActive('enBD','en');
   EN_TAB='D';
 }
@@ -953,28 +956,142 @@ async function loadEN(){
     const res=await fetch(EN_SHEET+'&t='+Date.now(),{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const text=await res.text();
+    EN_RAW_CSV=text; // guardar para debug
     const parsed=parseENCSV(text);
     if(parsed.length>0)EN_DB=[...parsed];
     else EN_DB=getENDemo();
-  }catch(e){EN_DB=getENDemo();}
+  }catch(e){
+    console.warn('[EN] Erro ao carregar planilha:',e.message);
+    EN_DB=getENDemo();
+    EN_RAW_CSV='';
+  }
   applyFlt();updFltInfo();renderEN();
-  $('ts').textContent=new Date().toLocaleTimeString('pt-BR')+' · Entrada · último: '+enLastDt();
+  $('ts').textContent=new Date().toLocaleTimeString('pt-BR')+' · Entrada · '+EN_DB.length+' reg · último: '+enLastDt();
 }
+
+let EN_RAW_CSV='';
+
+function showENDebug(){
+  const sp=$('sp');sp.classList.remove('hidden');
+  $('spTitle').textContent='DEBUG — INSPEÇÃO CSV';
+  if(!EN_RAW_CSV){$('spb').innerHTML='<div class="sp-hint">Sem CSV carregado.<br>Clique em ↻ Atualizar primeiro.</div>';return;}
+  
+  const lines=EN_RAW_CSV.split('\n').slice(0,30);
+  let h='<div style="font-size:.52rem;font-weight:700;color:var(--cEN);margin-bottom:8px">Primeiras linhas do CSV:</div>';
+  lines.forEach((l,i)=>{
+    const cols=splitCSV(l);
+    h+='<div style="font-size:.46rem;font-family:monospace;padding:2px 4px;border-bottom:1px solid rgba(25,32,51,.5);color:'+(i===0?'var(--gold)':'var(--mu)')+'">';
+    h+='<b style="color:var(--cEN)">L'+(i+1)+'</b> ['+cols.length+' colunas]<br>';
+    cols.forEach((c,ci)=>h+='<span style="color:var(--tx)">['+ci+']=</span><span style="color:var(--g)">'+c.substring(0,30).replace(/</g,'&lt;')+'</span> ');
+    h+='</div>';
+  });
+
+  // Agrupar registros por dia para validação
+  const byD={};
+  EN_DB.forEach(r=>{byD[r.data]=(byD[r.data]||0)+r.qtd;});
+  const sorted=Object.entries(byD).sort((a,b)=>b[1]-a[1]);
+  
+  h+='<div style="font-size:.52rem;font-weight:700;color:var(--cEN);margin:12px 0 6px">Totais por dia (banco carregado):</div>';
+  sorted.forEach(([d,t])=>{
+    const hit=t>=META_DIA;
+    h+='<div style="display:flex;justify-content:space-between;font-size:.54rem;padding:2px 0;border-bottom:1px solid rgba(25,32,51,.3)">';
+    h+='<span style="font-weight:700">'+d+'</span><span style="color:'+(hit?'var(--g)':'var(--r)')+'">'+t.toLocaleString('pt-BR')+'</span>';
+    h+='</div>';
+  });
+
+  h+='<div style="margin-top:10px;font-size:.5rem;color:var(--mu)">Total registros: <b style="color:var(--tx)">'+EN_DB.length+'</b> · Limite qtd/linha: <b style="color:var(--w)">'+EN_MAX_QTD_POR_LINHA+'</b></div>';
+  h+='<div style="margin-top:6px;font-size:.5rem;color:var(--mu)">Se os totais ainda estiverem errados, verifique:<br>1. GID da aba (atual: 0)<br>2. Limite qtd por linha acima<br>3. Colunas no CSV (índices acima)</div>';
+  
+  $('spb').innerHTML=h;
+}
+
+/* Palavras que indicam linha de TOTAL/SUBTOTAL — devem ser ignoradas */
+const EN_SKIP_FACCAO = new Set(['TOTAL','SUBTOTAL','SOMA','SUM','GRAND TOTAL','TOTAIS','GERAL','','SEM FACÇÃO']);
+const EN_SKIP_PRODUTO = new Set(['TOTAL','SUBTOTAL','SOMA','SUM','GRAND TOTAL','','SEM PRODUTO']);
+/* Quantidade máxima razoável por linha individual (proteção contra linhas de totais acumulados) */
+const EN_MAX_QTD_POR_LINHA = 2000;
 
 function parseENCSV(text){
   const rows=[];
-  text.split('\n').slice(1).forEach(line=>{
+  const lines=text.split('\n');
+  const header=lines[0]||'';
+
+  // Detectar número de colunas e posições a partir do header
+  // Esperado: Facção(A), Data Recebimento(B), Produto(C), Quantidade(D)
+  // Mas pode haver colunas extras antes (ex: ID sequencial)
+  const hcols=splitCSV(header).map(c=>c.trim().replace(/"/g,'').toLowerCase());
+  
+  // Detectar offset: procurar coluna que contém 'data' ou 'receb'
+  let idxData=-1, idxFac=-1, idxProd=-1, idxQtd=-1;
+  hcols.forEach((h,i)=>{
+    if(idxData<0 && (h.includes('data')||h.includes('receb')||h.includes('dt')))idxData=i;
+    if(idxFac<0  && (h.includes('fac')||h.includes('fornec')||h.includes('empresa')))idxFac=i;
+    if(idxProd<0 && (h.includes('prod')||h.includes('item')||h.includes('descr')||h.includes('ref')))idxProd=i;
+    if(idxQtd<0  && (h.includes('qtd')||h.includes('quant')||h.includes('pec')||h.includes('total')||h.includes('volume')))idxQtd=i;
+  });
+
+  // Fallback: assumir posições padrão A=faccao, B=data, C=produto, D=qtd
+  if(idxFac<0) idxFac=0;
+  if(idxData<0) idxData=1;
+  if(idxProd<0) idxProd=2;
+  if(idxQtd<0) idxQtd=3;
+
+  console.log('[EN Parse] Header detectado:', JSON.stringify(hcols));
+  console.log('[EN Parse] Índices: fac='+idxFac+' data='+idxData+' prod='+idxProd+' qtd='+idxQtd);
+
+  const ignoradas=[];
+  lines.slice(1).forEach((line,lineIdx)=>{
     if(!line.trim())return;
     const c=splitCSV(line);
-    if(c.length<4)return;
-    const dt=parseENDate(c[1]?.trim().replace(/"/g,''));
+    const maxIdx=Math.max(idxFac,idxData,idxProd,idxQtd);
+    if(c.length<=maxIdx)return;
+
+    const faccaoRaw=(c[idxFac]||'').trim().replace(/"/g,'');
+    const faccao=faccaoRaw.toUpperCase();
+    
+    // Filtrar linhas de TOTAL / cabeçalhos repetidos
+    if(EN_SKIP_FACCAO.has(faccao))return;
+    // Filtrar se facção começa com número apenas (linha de sequência/total)
+    if(/^\d+$/.test(faccao))return;
+    // Filtrar se a célula de facção contém palavras de total
+    if(/^(total|soma|sub[\s-]?total|grand)/i.test(faccaoRaw))return;
+
+    const rawDate=(c[idxData]||'').trim().replace(/"/g,'');
+    const dt=parseENDate(rawDate);
     if(!dt)return;
-    const faccao=(c[0]||'').trim().replace(/"/g,'').toUpperCase()||'SEM FACÇÃO';
-    const produto=(c[2]||'').trim().replace(/"/g,'').toUpperCase()||'SEM PRODUTO';
-    const qtd=parseInt(parseFloat((c[3]||'0').replace(/"/g,'').replace(',','.')));
+
+    const produtoRaw=(c[idxProd]||'').trim().replace(/"/g,'');
+    const produto=produtoRaw.toUpperCase()||'SEM PRODUTO';
+    if(EN_SKIP_PRODUTO.has(produto))return;
+
+    const qtdRaw=(c[idxQtd]||'0').replace(/"/g,'').replace(',','.').trim();
+    const qtd=parseInt(parseFloat(qtdRaw)||0);
     if(!qtd||qtd<=0)return;
-    rows.push({data:dt,faccao,produto,qtd});
-  });return rows;
+
+    // Proteção contra linhas de totais acumulados (valores muito altos por linha)
+    if(qtd>EN_MAX_QTD_POR_LINHA){
+      ignoradas.push({linha:lineIdx+2, faccao:faccaoRaw, data:rawDate, produto:produtoRaw, qtd, motivo:'qtd acima do limite '+EN_MAX_QTD_POR_LINHA});
+      return;
+    }
+
+    rows.push({data:dt, faccao, produto, qtd});
+  });
+
+  console.log('[EN Parse] Registros válidos:', rows.length);
+  if(ignoradas.length){
+    console.warn('[EN Parse] Linhas ignoradas por qtd alta:', ignoradas.length);
+    ignoradas.forEach(r=>console.warn('  Linha '+r.linha+': '+r.faccao+' | '+r.data+' | '+r.produto+' | qtd='+r.qtd+' ('+r.motivo+')'));
+  }
+
+  // Debug: mostrar totais por dia para validação
+  if(rows.length>0){
+    const byD={};
+    rows.forEach(r=>{byD[r.data]=(byD[r.data]||0)+r.qtd;});
+    const sorted=Object.entries(byD).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    console.log('[EN Parse] Top 5 dias por volume:', sorted.map(([d,t])=>d+'='+t).join(', '));
+  }
+
+  return rows;
 }
 function splitCSV(line){
   const r=[];let cur='';let inQ=false;
