@@ -21,7 +21,7 @@
 html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);overflow-x:hidden}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 
-/* ══ SPLASH ══════════════════════════════════════════ */
+/* SPLASH */
 #splash{
   position:fixed;inset:0;z-index:9999;
   background:var(--bg);
@@ -72,10 +72,10 @@ html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);overf
 .splash-card.en .sc-arrow{color:var(--cEN)}
 .splash-ft{margin-top:40px;font-size:.52rem;color:var(--mu);opacity:.5}
 
-/* ══ APP SHELL ════════════════════════════════════════ */
+/* APP SHELL */
 #app{display:none;flex-direction:column;min-height:100vh}
 
-/* ══ HEADER ══════════════════════════════════════════ */
+/* HEADER */
 .hdr{
   height:52px;background:linear-gradient(90deg,#070c18,#0a1120);
   border-bottom:1px solid var(--bd);
@@ -119,7 +119,7 @@ html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);overf
 .hdr-btn{padding:4px 11px;border-radius:12px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:.54rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s}
 .hdr-btn:hover{color:var(--tx);border-color:var(--mu)}
 
-/* ══ FILTRO ══════════════════════════════════════════ */
+/* FILTRO */
 .flt{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:5px 18px;background:var(--card);border-bottom:1px solid var(--bd)}
 .flt-label{font-size:.5rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .flt-chips{display:flex;gap:3px;flex-wrap:wrap}
@@ -136,7 +136,7 @@ html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);overf
 .flt-clear{padding:3px 7px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:.55rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s}
 .flt-clear:hover{color:var(--r);border-color:var(--r)}
 
-/* ══ SHARED COMPONENTS ═══════════════════════════════ */
+/* SHARED COMPONENTS */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:10px 18px}
 .kpi{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--bd);cursor:pointer;transition:.25s;position:relative;overflow:hidden}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
@@ -408,13 +408,11 @@ table.st{width:100%;border-collapse:collapse}
 </div>
 
 <script>
-/* ════════════════════════════════════════
-   GLOBALS
-════════════════════════════════════════ */
+/* GLOBALS */
 let CURRENT_MODULE = ''; // 'AC' ou 'EN'
 let CHARTS = {};
 
-// ── ACABAMENTO ──
+// --- ACABAMENTO ---
 const AC_SHEET = 'https://docs.google.com/spreadsheets/d/17ArfY6Y9YWyjKKcCM3lLUFZPh_lyxpEvPNSMvGIceYA/export?format=csv&gid=364099435';
 const AR = ['LINHA','EMBALAGEM','REVISÃO','ETIQUETAGEM'];
 const CL = {LINHA:'#38bdf8',EMBALAGEM:'#34d399','REVISÃO':'#fb923c',ETIQUETAGEM:'#c084fc'};
@@ -423,7 +421,7 @@ const META_SETOR = 3000;
 const SKIP = new Set(['APOIO','TESTE','']);
 let AC_DB = [], AC_DBF = [];
 
-// ── ENTRADA ──
+// --- ENTRADA ---
 const EN_SHEET = 'https://docs.google.com/spreadsheets/d/1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA/export?format=csv&gid=0';
 const META_DIA = 2500;
 const META_SEM = 12500;
@@ -435,9 +433,7 @@ let FLT_DE = '', FLT_ATE = '';
 
 const MO = {jan:'01',fev:'02',mar:'03',abr:'04',mai:'05',jun:'06',jul:'07',ago:'08',set:'09',out:'10',nov:'11',dez:'12'};
 
-/* ════════════════════════════════════════
-   HELPERS
-════════════════════════════════════════ */
+/* HELPERS */
 const fmt  = n => Math.round(n).toLocaleString('pt-BR');
 const fK   = n => n >= 1e3 ? (n/1e3).toFixed(1)+'k' : fmt(n);
 const sm   = a => a.reduce((s,v)=>s+v,0);
@@ -466,9 +462,7 @@ function destroyChart(id){if(CHARTS[id]){try{CHARTS[id].destroy();}catch(e){}del
 
 function closeSP(){$('sp').classList.add('hidden');}
 
-/* ════════════════════════════════════════
-   FILTRO
-════════════════════════════════════════ */
+/* FILTRO */
 function getActiveDB(){return CURRENT_MODULE==='AC'?AC_DB:EN_DB;}
 function getActiveDBF(){return CURRENT_MODULE==='AC'?AC_DBF:EN_DBF;}
 function setActiveDBF(arr){if(CURRENT_MODULE==='AC')AC_DBF=arr;else EN_DBF=arr;}
@@ -513,9 +507,7 @@ function updFltInfo(){
   el.textContent=dbf.length?n+' dias · '+dbf.length.toLocaleString('pt-BR')+' registros':'Sem dados no período';
 }
 
-/* ════════════════════════════════════════
-   NAVEGAÇÃO
-════════════════════════════════════════ */
+/* NAVEGAÇÃO */
 function goSplash(){
   $('splash').style.display='flex';
   $('app').style.display='none';
@@ -556,17 +548,13 @@ function refreshCurrent(){
   else if(CURRENT_MODULE==='EN')loadEN();
 }
 
-/* ════════════════════════════════════════
-   RENDER DISPATCHER
-════════════════════════════════════════ */
+/* RENDER DISPATCHER */
 function render(){
   if(CURRENT_MODULE==='AC') renderAC();
   else if(CURRENT_MODULE==='EN') renderEN();
 }
 
-/* ════════════════════════════════════════
-   ██████  ACABAMENTO  ██████
-════════════════════════════════════════ */
+/* ██████  ACABAMENTO  ██████ */
 let AC_TAB = 'R';
 let CHART_COMP = null;
 
@@ -888,9 +876,7 @@ function bACRank(){
   el.innerHTML=h;
 }
 
-/* ════════════════════════════════════════
-   ██████  ENTRADA FACÇÃO  ██████
-════════════════════════════════════════ */
+/* ██████  ENTRADA FACÇÃO  ██████ */
 let EN_TAB = 'D';
 
 function initEN(){
@@ -1132,7 +1118,7 @@ function enShowDay(date){
   let h='<div style="border-bottom:2px solid var(--cEN);padding-bottom:8px;margin-bottom:10px"><div style="font-family:Syne,sans-serif;font-size:1rem;font-weight:900;color:var(--cEN)">📅 '+date+'</div></div>';
   h+='<div style="background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:8px;padding:8px 10px;margin-bottom:8px">';
   h+='<div style="display:flex;justify-content:space-between"><span style="font-size:.54rem;color:var(--mu);font-weight:700">Total do Dia</span><span style="font-size:1.15rem;font-weight:900;color:'+(hit?'var(--g)':'var(--r)')+'">'+fmt(total)+'</span></div>';
-  h+='<div style="font-size:.5rem;color:'+(hit?'var(--g)':'var(--r)');font-weight:800;margin-top:3px">'+(hit?'✅ Meta atingida':'❌ Faltou '+fmt(META_DIA-total))+'</div></div>';
+  h+='<div style="font-size:.5rem;font-weight:800;margin-top:3px;color:'+(hit?'var(--g)':'var(--r)')+'">'+(hit?'✅ Meta atingida':'❌ Faltou '+fmt(META_DIA-total))+'</div></div>';
   const byP=gb(rows,r=>r.produto);const prods=Object.entries(byP).map(([k,v])=>({k,t:sm(v.map(r=>r.qtd))})).sort((a,b)=>b.t-a.t);const mx=Math.max(...prods.map(p=>p.t),1);
   h+='<div style="font-size:.48rem;font-weight:700;color:var(--mu);text-transform:uppercase;margin-bottom:5px">📦 Por Produto</div>';
   prods.forEach((p,i)=>{const pct=Math.max(3,Math.round(p.t/mx*100));const clr=PALETTE[i%PALETTE.length];h+='<div style="margin-bottom:5px"><div style="display:flex;justify-content:space-between;font-size:.58rem;margin-bottom:2px"><span style="font-weight:700">'+p.k.substring(0,22)+'</span><b>'+fmt(p.t)+'</b></div><div style="height:5px;background:var(--bd);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+clr+'"></div></div></div>';});
@@ -1222,9 +1208,7 @@ function bENTV(){
   },80);
 }
 
-/* ════════════════════════════════════════
-   FALLBACK DATA
-════════════════════════════════════════ */
+/* FALLBACK DATA */
 function getACFallback(){
   return [{"d":"06/02","a":"LINHA","f":"LILI","q":425},{"d":"06/02","a":"LINHA","f":"MAIDA","q":448},{"d":"06/02","a":"LINHA","f":"GE","q":407},{"d":"06/02","a":"LINHA","f":"KELLY","q":174},{"d":"06/02","a":"EMBALAGEM","f":"MARIA","q":1348},{"d":"06/02","a":"REVISÃO","f":"ALINE","q":492},{"d":"06/02","a":"REVISÃO","f":"ANDREIA","q":505},{"d":"06/02","a":"REVISÃO","f":"GRAZY","q":681},{"d":"09/02","a":"LINHA","f":"LILI","q":450},{"d":"09/02","a":"LINHA","f":"GE","q":361},{"d":"09/02","a":"LINHA","f":"KELLY","q":497},{"d":"09/02","a":"EMBALAGEM","f":"MARIA","q":806},{"d":"09/02","a":"REVISÃO","f":"ALINE","q":1071},{"d":"09/02","a":"REVISÃO","f":"ANDREIA","q":411},{"d":"09/02","a":"REVISÃO","f":"GRAZY","q":668},{"d":"10/02","a":"LINHA","f":"LILI","q":240},{"d":"10/02","a":"LINHA","f":"MAIDA","q":224},{"d":"10/02","a":"LINHA","f":"GE","q":400},{"d":"10/02","a":"LINHA","f":"KELLY","q":417},{"d":"10/02","a":"EMBALAGEM","f":"MARIA","q":675},{"d":"10/02","a":"REVISÃO","f":"ALINE","q":778},{"d":"10/02","a":"REVISÃO","f":"GRAZY","q":399},{"d":"11/02","a":"LINHA","f":"LILI","q":214},{"d":"11/02","a":"LINHA","f":"MAIDA","q":225},{"d":"11/02","a":"LINHA","f":"GE","q":391},{"d":"11/02","a":"EMBALAGEM","f":"MARIA","q":750},{"d":"11/02","a":"REVISÃO","f":"ALINE","q":570},{"d":"11/02","a":"REVISÃO","f":"ANDREIA","q":925},{"d":"11/02","a":"REVISÃO","f":"GRAZY","q":360},{"d":"12/02","a":"LINHA","f":"LILI","q":436},{"d":"12/02","a":"LINHA","f":"GE","q":472},{"d":"12/02","a":"EMBALAGEM","f":"MARIA","q":1108},{"d":"12/02","a":"REVISÃO","f":"ALINE","q":775},{"d":"12/02","a":"REVISÃO","f":"ANDREIA","q":953},{"d":"12/02","a":"REVISÃO","f":"GRAZY","q":943},{"d":"13/02","a":"LINHA","f":"LILI","q":373},{"d":"13/02","a":"LINHA","f":"MAIDA","q":267},{"d":"13/02","a":"LINHA","f":"GE","q":256},{"d":"13/02","a":"EMBALAGEM","f":"MARIA","q":883},{"d":"13/02","a":"REVISÃO","f":"ALINE","q":1069},{"d":"13/02","a":"REVISÃO","f":"ANDREIA","q":535},{"d":"13/02","a":"REVISÃO","f":"GRAZY","q":507},{"d":"19/02","a":"LINHA","f":"LILI","q":757},{"d":"19/02","a":"LINHA","f":"GE","q":492},{"d":"19/02","a":"LINHA","f":"KELLY","q":173},{"d":"19/02","a":"EMBALAGEM","f":"MARIA","q":1169},{"d":"19/02","a":"REVISÃO","f":"ALINE","q":1593},{"d":"19/02","a":"REVISÃO","f":"ANDREIA","q":1115},{"d":"19/02","a":"REVISÃO","f":"GRAZY","q":738},{"d":"25/02","a":"LINHA","f":"LILI","q":682},{"d":"25/02","a":"LINHA","f":"GE","q":632},{"d":"25/02","a":"EMBALAGEM","f":"MARIA","q":968},{"d":"25/02","a":"REVISÃO","f":"ALINE","q":722},{"d":"25/02","a":"REVISÃO","f":"ANDREIA","q":1017},{"d":"25/02","a":"REVISÃO","f":"GRAZY","q":879},{"d":"02/03","a":"LINHA","f":"MAIDA","q":402},{"d":"02/03","a":"LINHA","f":"GE","q":663},{"d":"02/03","a":"LINHA","f":"LILI","q":586},{"d":"02/03","a":"ETIQUETAGEM","f":"GLEICE","q":1001},{"d":"02/03","a":"REVISÃO","f":"ALINE","q":2114},{"d":"02/03","a":"REVISÃO","f":"ANDREIA","q":1204},{"d":"04/03","a":"LINHA","f":"FERNANDA","q":578},{"d":"04/03","a":"LINHA","f":"MAIDA","q":271},{"d":"04/03","a":"LINHA","f":"GE","q":459},{"d":"04/03","a":"LINHA","f":"LILI","q":913},{"d":"04/03","a":"ETIQUETAGEM","f":"GLEICE","q":1094},{"d":"04/03","a":"EMBALAGEM","f":"MARIA","q":1433},{"d":"10/03","a":"LINHA","f":"FERNANDA","q":449},{"d":"10/03","a":"LINHA","f":"MAIDA","q":251},{"d":"10/03","a":"LINHA","f":"GE","q":562},{"d":"10/03","a":"LINHA","f":"LILI","q":496},{"d":"10/03","a":"EMBALAGEM","f":"MARIA","q":1140},{"d":"10/03","a":"REVISÃO","f":"ALINE","q":1083},{"d":"14/03","a":"LINHA","f":"GE","q":755},{"d":"14/03","a":"LINHA","f":"KELLY","q":385},{"d":"14/03","a":"EMBALAGEM","f":"MARIA","q":1442},{"d":"14/03","a":"REVISÃO","f":"ALINE","q":908},{"d":"16/03","a":"LINHA","f":"LILI","q":476},{"d":"16/03","a":"LINHA","f":"GE","q":419},{"d":"16/03","a":"LINHA","f":"KELLY","q":377},{"d":"16/03","a":"EMBALAGEM","f":"MARIA","q":852},{"d":"16/03","a":"REVISÃO","f":"ALINE","q":980}].map(r=>({data:r.d,area:r.a,func:r.f,qtd:r.q}));
 }
