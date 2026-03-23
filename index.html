@@ -42,6 +42,34 @@ html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);font-
 .hdr-btn{padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:.58rem;cursor:pointer;transition:.2s}
 .hdr-btn:hover{color:var(--tx);border-color:var(--mu)}
 
+/* ── FILTRO DE PERÍODO ── */
+.flt{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 16px;background:var(--card);
+  border-bottom:1px solid var(--bd);flex-wrap:wrap;
+}
+.flt-label{font-size:.55rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.flt-chips{display:flex;gap:4px;flex-wrap:wrap}
+.flt-chip{
+  padding:3px 10px;border-radius:6px;border:1px solid var(--bd);
+  background:transparent;color:var(--mu);font-size:.6rem;font-weight:700;
+  cursor:pointer;transition:.15s;white-space:nowrap;
+}
+.flt-chip:hover{border-color:var(--mu);color:var(--tx)}
+.flt-chip.on{background:var(--cL);color:#000;border-color:var(--cL)}
+.flt-sep{width:1px;height:18px;background:var(--bd);flex-shrink:0}
+.flt-dates{display:flex;align-items:center;gap:6px}
+.flt-dates input{
+  background:var(--bg);border:1px solid var(--bd);border-radius:6px;
+  color:var(--tx);font-size:.6rem;padding:3px 7px;cursor:pointer;
+  outline:none;transition:.15s;
+}
+.flt-dates input:focus{border-color:var(--cL)}
+.flt-dates input::-webkit-calendar-picker-indicator{filter:invert(.5);cursor:pointer}
+.flt-info{margin-left:auto;font-size:.55rem;color:var(--mu);white-space:nowrap}
+.flt-clear{padding:3px 8px;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--mu);font-size:.58rem;cursor:pointer;transition:.15s}
+.flt-clear:hover{color:var(--r);border-color:var(--r)}
+
 /* ── KPI ROW ── */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:10px 16px}
 .kpi{
@@ -209,6 +237,27 @@ table.st{width:100%;border-collapse:collapse}
   </div>
 </div>
 
+<!-- FILTRO DE PERÍODO -->
+<div class="flt" id="fltBar">
+  <span class="flt-label">📅 Período</span>
+  <div class="flt-chips">
+    <button class="flt-chip" onclick="setFlt('7d')">7 dias</button>
+    <button class="flt-chip" onclick="setFlt('15d')">15 dias</button>
+    <button class="flt-chip on" onclick="setFlt('all')">Tudo</button>
+    <button class="flt-chip" onclick="setFlt('mes')">Este mês</button>
+    <button class="flt-chip" onclick="setFlt('semana')">Esta semana</button>
+  </div>
+  <div class="flt-sep"></div>
+  <div class="flt-dates">
+    <span style="font-size:.55rem;color:var(--mu)">De</span>
+    <input type="date" id="fltDe" onchange="setFltCustom()">
+    <span style="font-size:.55rem;color:var(--mu)">Até</span>
+    <input type="date" id="fltAte" onchange="setFltCustom()">
+  </div>
+  <span class="flt-info" id="fltInfo"></span>
+  <button class="flt-clear" onclick="setFlt('all')">✕ Limpar</button>
+</div>
+
 <!-- KPI -->
 <div id="kpis" class="kpi-row"></div>
 
@@ -245,7 +294,76 @@ const META_SETOR=3000;
 
 const FB=[{"d":"06/02","a":"LINHA","f":"LILI","q":425},{"d":"06/02","a":"LINHA","f":"MAIDA","q":448},{"d":"06/02","a":"LINHA","f":"GE","q":407},{"d":"06/02","a":"LINHA","f":"KELLY","q":174},{"d":"06/02","a":"EMBALAGEM","f":"MARIA","q":1348},{"d":"06/02","a":"REVISÃO","f":"ALINE","q":492},{"d":"06/02","a":"REVISÃO","f":"ANDREIA","q":505},{"d":"06/02","a":"REVISÃO","f":"GRAZY","q":681},{"d":"09/02","a":"LINHA","f":"LILI","q":450},{"d":"09/02","a":"LINHA","f":"GE","q":361},{"d":"09/02","a":"LINHA","f":"KELLY","q":497},{"d":"09/02","a":"EMBALAGEM","f":"MARIA","q":806},{"d":"09/02","a":"REVISÃO","f":"ALINE","q":1071},{"d":"09/02","a":"REVISÃO","f":"ANDREIA","q":411},{"d":"09/02","a":"REVISÃO","f":"GRAZY","q":668},{"d":"10/02","a":"LINHA","f":"LILI","q":240},{"d":"10/02","a":"LINHA","f":"MAIDA","q":224},{"d":"10/02","a":"LINHA","f":"GE","q":400},{"d":"10/02","a":"LINHA","f":"KELLY","q":417},{"d":"10/02","a":"EMBALAGEM","f":"MARIA","q":675},{"d":"10/02","a":"REVISÃO","f":"ALINE","q":778},{"d":"10/02","a":"REVISÃO","f":"GRAZY","q":399},{"d":"11/02","a":"LINHA","f":"LILI","q":214},{"d":"11/02","a":"LINHA","f":"MAIDA","q":225},{"d":"11/02","a":"LINHA","f":"GE","q":391},{"d":"11/02","a":"EMBALAGEM","f":"MARIA","q":750},{"d":"11/02","a":"REVISÃO","f":"ALINE","q":570},{"d":"11/02","a":"REVISÃO","f":"ANDREIA","q":925},{"d":"11/02","a":"REVISÃO","f":"GRAZY","q":360},{"d":"12/02","a":"LINHA","f":"LILI","q":436},{"d":"12/02","a":"LINHA","f":"GE","q":472},{"d":"12/02","a":"EMBALAGEM","f":"MARIA","q":1108},{"d":"12/02","a":"REVISÃO","f":"ALINE","q":775},{"d":"12/02","a":"REVISÃO","f":"ANDREIA","q":953},{"d":"12/02","a":"REVISÃO","f":"GRAZY","q":943},{"d":"13/02","a":"LINHA","f":"LILI","q":373},{"d":"13/02","a":"LINHA","f":"MAIDA","q":267},{"d":"13/02","a":"LINHA","f":"GE","q":256},{"d":"13/02","a":"EMBALAGEM","f":"MARIA","q":883},{"d":"13/02","a":"REVISÃO","f":"ALINE","q":1069},{"d":"13/02","a":"REVISÃO","f":"ANDREIA","q":535},{"d":"13/02","a":"REVISÃO","f":"GRAZY","q":507},{"d":"18/02","a":"LINHA","f":"LILI","q":264},{"d":"18/02","a":"LINHA","f":"GE","q":464},{"d":"18/02","a":"LINHA","f":"KELLY","q":32},{"d":"18/02","a":"EMBALAGEM","f":"MARIA","q":663},{"d":"18/02","a":"REVISÃO","f":"ALINE","q":498},{"d":"18/02","a":"REVISÃO","f":"ANDREIA","q":699},{"d":"18/02","a":"REVISÃO","f":"GRAZY","q":732},{"d":"19/02","a":"LINHA","f":"LILI","q":757},{"d":"19/02","a":"LINHA","f":"GE","q":492},{"d":"19/02","a":"LINHA","f":"KELLY","q":173},{"d":"19/02","a":"EMBALAGEM","f":"MARIA","q":1169},{"d":"19/02","a":"REVISÃO","f":"ALINE","q":1593},{"d":"19/02","a":"REVISÃO","f":"ANDREIA","q":1115},{"d":"19/02","a":"REVISÃO","f":"GRAZY","q":738},{"d":"20/02","a":"LINHA","f":"LILI","q":345},{"d":"20/02","a":"LINHA","f":"MAIDA","q":255},{"d":"20/02","a":"LINHA","f":"GE","q":353},{"d":"20/02","a":"LINHA","f":"KELLY","q":26},{"d":"20/02","a":"EMBALAGEM","f":"MARIA","q":276},{"d":"20/02","a":"REVISÃO","f":"ALINE","q":430},{"d":"20/02","a":"REVISÃO","f":"ANDREIA","q":785},{"d":"20/02","a":"REVISÃO","f":"GRAZY","q":151},{"d":"23/02","a":"LINHA","f":"LILI","q":206},{"d":"23/02","a":"LINHA","f":"MAIDA","q":189},{"d":"23/02","a":"LINHA","f":"GE","q":307},{"d":"23/02","a":"EMBALAGEM","f":"MARIA","q":862},{"d":"23/02","a":"REVISÃO","f":"ALINE","q":560},{"d":"23/02","a":"REVISÃO","f":"ANDREIA","q":726},{"d":"23/02","a":"REVISÃO","f":"GRAZY","q":459},{"d":"24/02","a":"LINHA","f":"LILI","q":305},{"d":"24/02","a":"LINHA","f":"GE","q":278},{"d":"24/02","a":"EMBALAGEM","f":"MARIA","q":261},{"d":"24/02","a":"REVISÃO","f":"ALINE","q":390},{"d":"24/02","a":"REVISÃO","f":"ANDREIA","q":1057},{"d":"24/02","a":"REVISÃO","f":"GRAZY","q":350},{"d":"25/02","a":"LINHA","f":"LILI","q":682},{"d":"25/02","a":"LINHA","f":"GE","q":632},{"d":"25/02","a":"EMBALAGEM","f":"MARIA","q":968},{"d":"25/02","a":"REVISÃO","f":"ALINE","q":722},{"d":"25/02","a":"REVISÃO","f":"ANDREIA","q":1017},{"d":"25/02","a":"REVISÃO","f":"GRAZY","q":879},{"d":"26/02","a":"LINHA","f":"LILI","q":548},{"d":"26/02","a":"LINHA","f":"GE","q":559},{"d":"26/02","a":"LINHA","f":"MAIDA","q":490},{"d":"26/02","a":"REVISÃO","f":"ALINE","q":533},{"d":"26/02","a":"REVISÃO","f":"ANDREIA","q":585},{"d":"26/02","a":"REVISÃO","f":"GRAZY","q":393},{"d":"27/02","a":"LINHA","f":"MAIDA","q":511},{"d":"27/02","a":"LINHA","f":"GE","q":523},{"d":"27/02","a":"LINHA","f":"LILI","q":105},{"d":"27/02","a":"EMBALAGEM","f":"MARIA","q":1292},{"d":"27/02","a":"REVISÃO","f":"ALINE","q":337},{"d":"27/02","a":"REVISÃO","f":"ANDREIA","q":712},{"d":"27/02","a":"REVISÃO","f":"GRAZY","q":337},{"d":"02/03","a":"LINHA","f":"MAIDA","q":402},{"d":"02/03","a":"LINHA","f":"GE","q":663},{"d":"02/03","a":"LINHA","f":"LILI","q":586},{"d":"02/03","a":"LINHA","f":"DANI","q":319},{"d":"02/03","a":"ETIQUETAGEM","f":"GLEICE","q":1001},{"d":"02/03","a":"REVISÃO","f":"ALINE","q":2114},{"d":"02/03","a":"REVISÃO","f":"ANDREIA","q":1204},{"d":"02/03","a":"REVISÃO","f":"GRAZY","q":302},{"d":"03/03","a":"LINHA","f":"FERNANDA","q":391},{"d":"03/03","a":"LINHA","f":"ANDREIA","q":220},{"d":"03/03","a":"LINHA","f":"LILI","q":640},{"d":"03/03","a":"LINHA","f":"GE","q":506},{"d":"03/03","a":"LINHA","f":"DANI","q":319},{"d":"04/03","a":"LINHA","f":"FERNANDA","q":578},{"d":"04/03","a":"LINHA","f":"MAIDA","q":271},{"d":"04/03","a":"LINHA","f":"GE","q":459},{"d":"04/03","a":"LINHA","f":"LILI","q":913},{"d":"04/03","a":"LINHA","f":"DANI","q":308},{"d":"04/03","a":"ETIQUETAGEM","f":"GLEICE","q":1094},{"d":"04/03","a":"EMBALAGEM","f":"MARIA","q":1433},{"d":"04/03","a":"EMBALAGEM","f":"HEVELLYN","q":507},{"d":"05/03","a":"LINHA","f":"FERNANDA","q":538},{"d":"05/03","a":"LINHA","f":"DANI","q":310},{"d":"05/03","a":"LINHA","f":"LILI","q":324},{"d":"05/03","a":"LINHA","f":"GE","q":402},{"d":"05/03","a":"EMBALAGEM","f":"MARIA","q":1058},{"d":"05/03","a":"REVISÃO","f":"ALINE","q":350},{"d":"05/03","a":"REVISÃO","f":"KELLY","q":393},{"d":"06/03","a":"LINHA","f":"FERNANDA","q":279},{"d":"06/03","a":"LINHA","f":"GE","q":450},{"d":"06/03","a":"LINHA","f":"MAIDA","q":135},{"d":"06/03","a":"LINHA","f":"LILI","q":246},{"d":"06/03","a":"LINHA","f":"DANI","q":227},{"d":"06/03","a":"EMBALAGEM","f":"MARIA","q":1332},{"d":"06/03","a":"REVISÃO","f":"ALINE","q":800},{"d":"06/03","a":"REVISÃO","f":"KELLY","q":478},{"d":"06/03","a":"REVISÃO","f":"FERNANDA DAYANE","q":1212},{"d":"09/03","a":"LINHA","f":"FERNANDA","q":378},{"d":"09/03","a":"LINHA","f":"DANI","q":154},{"d":"09/03","a":"LINHA","f":"LILI","q":524},{"d":"09/03","a":"LINHA","f":"GE","q":649},{"d":"09/03","a":"EMBALAGEM","f":"MARIA","q":1471},{"d":"09/03","a":"REVISÃO","f":"FERNANDA DAYANE","q":1145},{"d":"09/03","a":"REVISÃO","f":"ALINE","q":566},{"d":"09/03","a":"REVISÃO","f":"RAYLAINE","q":459},{"d":"10/03","a":"LINHA","f":"FERNANDA","q":449},{"d":"10/03","a":"LINHA","f":"MAIDA","q":251},{"d":"10/03","a":"LINHA","f":"MAURICIA","q":342},{"d":"10/03","a":"LINHA","f":"DANI","q":334},{"d":"10/03","a":"LINHA","f":"GE","q":562},{"d":"10/03","a":"LINHA","f":"LILI","q":496},{"d":"10/03","a":"EMBALAGEM","f":"MARIA","q":1140},{"d":"10/03","a":"EMBALAGEM","f":"ANA FLAVIA","q":604},{"d":"10/03","a":"EMBALAGEM","f":"NATHALIA","q":461},{"d":"10/03","a":"REVISÃO","f":"ALINE","q":1083},{"d":"10/03","a":"REVISÃO","f":"RAILENIY","q":506},{"d":"10/03","a":"REVISÃO","f":"RAYLAINE","q":190},{"d":"11/03","a":"LINHA","f":"FERNANDA","q":487},{"d":"11/03","a":"LINHA","f":"MAIDA","q":142},{"d":"11/03","a":"LINHA","f":"YAILEN","q":364},{"d":"11/03","a":"LINHA","f":"LINDALVA","q":161},{"d":"11/03","a":"LINHA","f":"LILI","q":565},{"d":"11/03","a":"LINHA","f":"GE","q":683},{"d":"11/03","a":"LINHA","f":"DANI","q":362},{"d":"11/03","a":"EMBALAGEM","f":"MARIA","q":1035},{"d":"11/03","a":"EMBALAGEM","f":"SAMELA","q":659},{"d":"11/03","a":"EMBALAGEM","f":"KELLY","q":600},{"d":"11/03","a":"REVISÃO","f":"ALINE","q":951},{"d":"11/03","a":"LINHA","f":"DANI","q":164},{"d":"12/03","a":"LINHA","f":"GE","q":520},{"d":"12/03","a":"LINHA","f":"LILI","q":330},{"d":"12/03","a":"LINHA","f":"YAILEN","q":239},{"d":"12/03","a":"EMBALAGEM","f":"MARIA","q":988},{"d":"12/03","a":"EMBALAGEM","f":"SAMELA","q":800},{"d":"12/03","a":"EMBALAGEM","f":"LILI","q":278},{"d":"12/03","a":"REVISÃO","f":"ALINE","q":1347},{"d":"12/03","a":"REVISÃO","f":"FERNANDA SOUZA","q":274},{"d":"12/03","a":"REVISÃO","f":"FERNANDA PEREIRA","q":618},{"d":"12/03","a":"REVISÃO","f":"DANI","q":436},{"d":"13/03","a":"LINHA","f":"LILI","q":332},{"d":"13/03","a":"LINHA","f":"DANI","q":365},{"d":"13/03","a":"LINHA","f":"GE","q":375},{"d":"13/03","a":"LINHA","f":"JORDANA","q":57},{"d":"13/03","a":"LINHA","f":"VITORIA ARAUJO","q":202},{"d":"13/03","a":"LINHA","f":"BRENDA","q":157},{"d":"13/03","a":"LINHA","f":"VITORIA LAUANIY","q":119},{"d":"13/03","a":"EMBALAGEM","f":"MARIA","q":900},{"d":"13/03","a":"EMBALAGEM","f":"SAMELA","q":443},{"d":"13/03","a":"EMBALAGEM","f":"JORDANA","q":147},{"d":"13/03","a":"EMBALAGEM","f":"LILI","q":245},{"d":"13/03","a":"REVISÃO","f":"ALINE","q":377},{"d":"13/03","a":"REVISÃO","f":"FERNANDA SOUZA","q":879},{"d":"13/03","a":"REVISÃO","f":"FERNANDA PEREIRA","q":203},{"d":"13/03","a":"REVISÃO","f":"ISABELLE","q":344},{"d":"14/03","a":"LINHA","f":"GE","q":755},{"d":"14/03","a":"LINHA","f":"MARIA EDUARDA","q":190},{"d":"14/03","a":"LINHA","f":"KELLY","q":385},{"d":"14/03","a":"EMBALAGEM","f":"MARIA","q":1442},{"d":"14/03","a":"REVISÃO","f":"FERNANDA SOUZA","q":566},{"d":"14/03","a":"REVISÃO","f":"ALINE","q":908},{"d":"14/03","a":"REVISÃO","f":"ISABELLE","q":947},{"d":"16/03","a":"LINHA","f":"LILI","q":476},{"d":"16/03","a":"LINHA","f":"GE","q":419},{"d":"16/03","a":"LINHA","f":"KELLY","q":377},{"d":"16/03","a":"LINHA","f":"JORDANA","q":97},{"d":"16/03","a":"LINHA","f":"RAMILLY","q":396},{"d":"16/03","a":"EMBALAGEM","f":"MARIA","q":852},{"d":"16/03","a":"EMBALAGEM","f":"ANA FLAVIA","q":670},{"d":"16/03","a":"EMBALAGEM","f":"SAMELA","q":495},{"d":"16/03","a":"REVISÃO","f":"FERNANDA PEREIRA","q":896},{"d":"16/03","a":"REVISÃO","f":"FERNANDA SOUZA","q":859},{"d":"16/03","a":"REVISÃO","f":"ALINE","q":980}];
 let DB=FB.map(r=>({data:r.d,area:r.a,func:r.f,qtd:r.q}));
+let DBF=[];// DB filtrado — usado em todas as renderizações
 let CHARTS={};
+let FLT_DE='',FLT_ATE='',FLT_PRE='all';
+
+// Converte dd/mm para yyyy-mm-dd para comparação
+function toISO(d){if(!d)return'';const[dd,mm]=d.split('/');return'2025-'+mm+'-'+dd;}
+// Filtra DB pelo período selecionado e retorna array filtrado
+function applyFlt(){
+  if(!FLT_DE&&!FLT_ATE){DBF=[...DB];return;}
+  DBF=DB.filter(r=>{
+    const iso=toISO(r.data);
+    if(FLT_DE&&iso<FLT_DE)return false;
+    if(FLT_ATE&&iso>FLT_ATE)return false;
+    return true;
+  });
+}
+function setFlt(pre){
+  FLT_PRE=pre;
+  // atualiza chips
+  document.querySelectorAll('.flt-chip').forEach(b=>b.classList.remove('on'));
+  const chips={'7d':0,'15d':1,'all':2,'mes':3,'semana':4};
+  const idx=chips[pre];
+  if(idx!==undefined)document.querySelectorAll('.flt-chip')[idx].classList.add('on');
+
+  const hoje=new Date();
+  const fmt2=d=>d.toISOString().split('T')[0];
+
+  if(pre==='all'){FLT_DE='';FLT_ATE='';$('fltDe').value='';$('fltAte').value='';}
+  else if(pre==='7d'){
+    const de=new Date(hoje);de.setDate(de.getDate()-6);
+    FLT_DE=fmt2(de);FLT_ATE=fmt2(hoje);
+    $('fltDe').value=FLT_DE;$('fltAte').value=FLT_ATE;
+  }else if(pre==='15d'){
+    const de=new Date(hoje);de.setDate(de.getDate()-14);
+    FLT_DE=fmt2(de);FLT_ATE=fmt2(hoje);
+    $('fltDe').value=FLT_DE;$('fltAte').value=FLT_ATE;
+  }else if(pre==='mes'){
+    const de=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+    const ate=new Date(hoje.getFullYear(),hoje.getMonth()+1,0);
+    FLT_DE=fmt2(de);FLT_ATE=fmt2(ate);
+    $('fltDe').value=FLT_DE;$('fltAte').value=FLT_ATE;
+  }else if(pre==='semana'){
+    const dow=hoje.getDay()||7;
+    const de=new Date(hoje);de.setDate(de.getDate()-dow+1);
+    const ate=new Date(de);ate.setDate(de.getDate()+6);
+    FLT_DE=fmt2(de);FLT_ATE=fmt2(ate);
+    $('fltDe').value=FLT_DE;$('fltAte').value=FLT_ATE;
+  }
+  applyFlt();
+  updFltInfo();
+  render();
+}
+function setFltCustom(){
+  FLT_DE=$('fltDe').value;
+  FLT_ATE=$('fltAte').value;
+  FLT_PRE='custom';
+  document.querySelectorAll('.flt-chip').forEach(b=>b.classList.remove('on'));
+  applyFlt();
+  updFltInfo();
+  render();
+}
+function updFltInfo(){
+  const el=$('fltInfo');if(!el)return;
+  const n=[...new Set(DBF.map(r=>r.data))].length;
+  el.textContent=DBF.length?n+' dias · '+DBF.length+' registros':'Sem dados no período';
+}
+function render(){
+  bKPI();bComp();bDepts();
+  if(!$('pT').classList.contains('hidden'))bRank();
+}
 
 const fmt=n=>Math.round(n).toLocaleString('pt-BR');
 const fK=n=>n>=1e3?(n/1e3).toFixed(1)+'k':fmt(n);
@@ -279,7 +397,7 @@ function parseCSV(t){
   });return rows;
 }
 function lastDt(){
-  const ds=[...new Set(DB.map(r=>r.data))].sort((a,b)=>sk(a).localeCompare(sk(b)));
+  const ds=[...new Set(DBF.map(r=>r.data))].sort((a,b)=>sk(a).localeCompare(sk(b)));
   return ds.length?ds[ds.length-1]:'';
 }
 function gW(dt){
@@ -297,7 +415,7 @@ function closeSP(){$('sp').classList.add('hidden');}
 /* ═══ SHOW DAY DETAIL (chart click) ═══ */
 function showDayDetail(area,date){
   const sp=$('sp');sp.classList.remove('hidden');
-  const rows=DB.filter(r=>r.area===area&&r.data===date&&r.qtd>0).sort((a,b)=>b.qtd-a.qtd);
+  const rows=DBF.filter(r=>r.area===area&&r.data===date&&r.qtd>0).sort((a,b)=>b.qtd-a.qtd);
   if(!rows.length){$('spb').innerHTML='<div class="sp-hint">Sem dados para '+date+'</div>';return;}
   const clr=CL[area],mp=MP[area]||500;
   const total=sm(rows.map(r=>r.qtd));
@@ -359,7 +477,7 @@ function showDayDetail(area,date){
 /* ═══ PERSON DETAILS ═══ */
 function sPer(area,name){
   const sp=$('sp');sp.classList.remove('hidden');
-  const rows=DB.filter(r=>r.area===area&&r.func===name&&r.qtd>0);
+  const rows=DBF.filter(r=>r.area===area&&r.func===name&&r.qtd>0);
   if(!rows.length)return;
   const clr=CL[area],mp=MP[area]||500,vals=rows.map(r=>r.qtd);
   const mnv=av(vals),mxv=Math.max(...vals),miv=Math.min(...vals);
@@ -403,7 +521,7 @@ function bKPI(){
   const last=lastDt();if(!last)return;
   const cn={LINHA:'L',EMBALAGEM:'E','REVISÃO':'R',ETIQUETAGEM:'T'};
   AR.forEach(a=>{
-    const all=DB.filter(r=>r.area===a&&r.qtd>0);
+    const all=DBF.filter(r=>r.area===a&&r.qtd>0);
     const clr=CL[a],mp=MP[a]||500;
     const d=document.createElement('div');
     d.className='kpi kpi-'+cn[a];d.onclick=()=>scrollTo(a);
@@ -438,7 +556,7 @@ function bDepts(){
   Object.values(CHARTS).forEach(c=>{try{c.destroy();}catch(e){}});CHARTS={};
   const last=lastDt();
   AR.forEach(area=>{
-    const all=DB.filter(r=>r.area===area&&r.qtd>0);
+    const all=DBF.filter(r=>r.area===area&&r.qtd>0);
     const clr=CL[area],mp=MP[area]||500;
     const div=document.createElement('div');div.className='dept';div.id='d_'+area.replace(/[^a-z]/gi,'');
     if(!all.length){
@@ -544,7 +662,7 @@ function bDepts(){
                 },
                 afterBody:ctx2=>{
                   const idx=ctx2[0].dataIndex,dt=_dates[idx];
-                  const dr=DB.filter(r=>r.area===_area&&r.data===dt&&r.qtd>0).sort((a,b)=>b.qtd-a.qtd);
+                  const dr=DBF.filter(r=>r.area===_area&&r.data===dt&&r.qtd>0).sort((a,b)=>b.qtd-a.qtd);
                   if(!dr.length)return[];
                   const mpv=MP[_area]||500;
                   const lines=['─────────────────'];
@@ -572,7 +690,7 @@ function scrollTo(a){const e=$('d_'+a.replace(/[^a-z]/gi,''));if(e)e.scrollIntoV
 function bRank(){
   const el=$('rc');el.innerHTML='';
   const wks=['S1F','S2F','S3F','S4F','S1M','S2M','S3M','S4M'];
-  const bw=gb(DB.filter(r=>r.qtd>0),r=>gW(r.data));
+  const bw=gb(DBF.filter(r=>r.qtd>0),r=>gW(r.data));
   let cw='';for(let i=wks.length-1;i>=0;i--){if(bw[wks[i]]?.length){cw=wks[i];break;}}
   if(!cw){el.innerHTML='<div style="text-align:center;padding:60px;color:var(--mu)">Sem dados</div>';return;}
   const wr=bw[cw];
@@ -653,12 +771,12 @@ let CHART_COMP=null;
 function bComp(){
   const el=$('comp');
   if(!el)return;
-  const allDates=[...new Set(DB.map(r=>r.data))].sort((a,b)=>sk(a).localeCompare(sk(b)));
+  const allDates=[...new Set(DBF.map(r=>r.data))].sort((a,b)=>sk(a).localeCompare(sk(b)));
   if(!allDates.length){el.classList.add('hidden');return;}
   el.classList.remove('hidden');
 
   const tot={};
-  DB.filter(r=>r.qtd>0).forEach(r=>{
+  DBF.filter(r=>r.qtd>0).forEach(r=>{
     const k=r.area+'|'+r.data;
     tot[k]=(tot[k]||0)+r.qtd;
   });
@@ -769,13 +887,12 @@ async function load(){
   }catch(e){
     DB=FB.map(r=>({data:r.d,area:r.a,func:r.f,qtd:r.q}));
   }
-  bKPI();
-  bComp();
-  bDepts();
+  applyFlt();
+  updFltInfo();
+  render();
   const agora=new Date();
   const janela=isJanela();
   $('ts').textContent=agora.toLocaleTimeString('pt-BR')+' · Último: '+lastDt()+(janela?' · ↻ 60min':' · fora da janela');
-  if(!$('pT').classList.contains('hidden'))bRank();
 }
 
 function isJanela(){
