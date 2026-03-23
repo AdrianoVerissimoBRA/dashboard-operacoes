@@ -70,27 +70,36 @@ html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--tx);font-
 .cw{background:rgba(255,255,255,.06);color:var(--tx)}
 
 /* ── MAIN LAYOUT ── */
-.pg{display:flex;gap:0;min-height:calc(100vh - 50px - 80px)}
+.pg{display:flex;gap:0;align-items:flex-start;min-height:calc(100vh - 50px - 80px)}
 .pg-main{flex:1;padding:8px 16px 50px;min-width:0;overflow:hidden}
 .pg-side{
   width:286px;flex-shrink:0;
   padding:8px 10px 8px 0;
+  position:sticky;top:50px;
+  max-height:calc(100vh - 66px);
+  display:flex;flex-direction:column;
 }
 .pg-side::-webkit-scrollbar{width:3px}
 
 /* ── SIDE PANEL ── */
 .sp{
   background:var(--card);border:1px solid var(--bd);border-radius:12px;
-  box-shadow:0 8px 32px rgba(0,0,0,.4);overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;
+  max-height:calc(100vh - 66px);
+  overflow:hidden;
 }
 .sp-h{
   padding:9px 13px;border-bottom:1px solid var(--bd);
   display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;
 }
 .sp-h span{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--cL)}
 .sp-h button{background:none;border:none;color:var(--mu);font-size:1rem;cursor:pointer;line-height:1}
 .sp-h button:hover{color:var(--tx)}
-.sp-b{padding:11px 13px;font-size:.62rem}
+.sp-b{padding:11px 13px;font-size:.62rem;overflow-y:auto;flex:1}
+.sp-b::-webkit-scrollbar{width:3px}
+.sp-b::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
 .sp-hint{text-align:center;padding:28px 10px;color:var(--mu);line-height:1.8;font-size:.62rem}
 
 /* ── COMPARATIVO SETORES ── */
@@ -642,6 +651,7 @@ function tab(t){
 }
 
 /* ═══ COMPARATIVO SETORES ═══ */
+let CHART_COMP=null;
 function bComp(){
   const el=$('comp');
   if(!el)return;
@@ -649,43 +659,105 @@ function bComp(){
   if(!allDates.length){el.classList.add('hidden');return;}
   el.classList.remove('hidden');
 
-  // Monta mapa area+data → total
   const tot={};
   DB.filter(r=>r.qtd>0).forEach(r=>{
     const k=r.area+'|'+r.data;
     tot[k]=(tot[k]||0)+r.qtd;
   });
 
-  const dias=[...allDates].reverse().slice(0,20);
-  const cols=AR.length+1; // label + 4 setores
+  // Usar todos os dias disponíveis como eixo X
+  const dias=[...allDates];
 
-  let h='<div class="comp-h">📊 Histórico de Metas por Setor <span style="font-size:.48rem;color:var(--mu);font-weight:600;margin-left:4px">· Meta setor: '+fmt(META_SETOR)+' pçs/dia</span></div>';
+  el.innerHTML=
+    '<div class="comp-h">📊 Histórico de Metas por Setor'+
+    '<span style="font-size:.48rem;color:var(--mu);font-weight:600;margin-left:6px">· linha tracejada = meta '+fmt(META_SETOR)+' pçs</span></div>'+
+    '<div style="position:relative;height:200px"><canvas id="chartComp"></canvas></div>';
 
-  // Grid dinâmico: 1 col label + N cols setores
-  const gtc='grid-template-columns:38px repeat('+AR.length+',1fr)';
+  setTimeout(()=>{
+    const ctx=$('chartComp');
+    if(!ctx)return;
+    if(CHART_COMP){try{CHART_COMP.destroy();}catch(e){}}
 
-  // Cabeçalho setores
-  h+='<div class="comp-row" style="'+gtc+';margin-bottom:5px">';
-  h+='<div></div>';
-  AR.forEach(a=>{
-    h+='<div class="comp-dept" style="color:'+CL[a]+'">'+a.replace('REVISÃO','REVIS.').replace('EMBALAGEM','EMBAL.').replace('ETIQUETAGEM','ETIC.')+'</div>';
-  });
-  h+='</div>';
-
-  // Linhas por dia
-  dias.forEach(d=>{
-    h+='<div class="comp-row" style="'+gtc+'">';
-    h+='<div class="comp-label">'+d+'</div>';
-    AR.forEach(a=>{
-      const v=tot[a+'|'+d]||0;
-      if(!v){h+='<div class="comp-cell comp-na">—</div>';return;}
-      const hit=v>=META_SETOR;
-      h+='<div class="comp-cell '+(hit?'comp-hit':'comp-miss')+'">'+(hit?'✅ ':'❌ ')+fK(v)+'</div>';
+    const datasets=AR.map(a=>{
+      const clr=CL[a];
+      const vals=dias.map(d=>tot[a+'|'+d]||null);
+      return {
+        label:a,
+        data:vals,
+        borderColor:clr,
+        backgroundColor:clr+'18',
+        fill:false,
+        tension:.35,
+        borderWidth:2.5,
+        spanGaps:true,
+        pointRadius:vals.map(v=>v!==null?(v>=META_SETOR?6:3):0),
+        pointHoverRadius:10,
+        pointBackgroundColor:vals.map(v=>v!==null?(v>=META_SETOR?'#22c55e':'#ef4444'):'transparent'),
+        pointBorderColor:'#0a0e17',
+        pointBorderWidth:1.5,
+        pointHoverBorderColor:'#ffffff',
+        pointHoverBorderWidth:3,
+      };
     });
-    h+='</div>';
-  });
 
-  el.innerHTML=h;
+    // Linha de meta tracejada vermelha
+    datasets.push({
+      label:'Meta',
+      data:dias.map(()=>META_SETOR),
+      borderColor:'#ef4444',
+      borderDash:[6,4],
+      pointRadius:0,
+      borderWidth:1.5,
+      fill:false,
+      tension:0,
+    });
+
+    CHART_COMP=new Chart(ctx,{
+      type:'line',
+      data:{labels:dias, datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{
+            display:true,
+            position:'top',
+            labels:{
+              color:'#94a3b8',font:{size:9,weight:'700'},
+              boxWidth:12,padding:12,
+              filter:item=>item.text!=='Meta',
+              generateLabels:chart=>AR.map(a=>({
+                text:a,
+                fillStyle:CL[a],
+                strokeStyle:CL[a],
+                fontColor:'#94a3b8',
+                lineWidth:2,
+                datasetIndex:AR.indexOf(a)
+              }))
+            }
+          },
+          tooltip:{
+            backgroundColor:'#111827f0',borderColor:'#1e293b',borderWidth:1,
+            padding:12,cornerRadius:8,
+            titleFont:{weight:'bold',size:12},bodyFont:{size:10},
+            callbacks:{
+              title:c=>'📅 '+c[0].label,
+              label:c=>{
+                if(c.dataset.label==='Meta')return'  ─ Meta: '+fmt(META_SETOR)+' pçs';
+                const v=tot[c.dataset.label+'|'+c.label]||0;
+                if(!v)return null;
+                return'  '+(v>=META_SETOR?'✅':'❌')+' '+c.dataset.label+': '+fmt(v)+' pçs';
+              },
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{font:{size:8},color:'#64748b',maxRotation:45},grid:{color:'#1e293b22'}},
+          y:{ticks:{font:{size:9},color:'#64748b',callback:v=>fK(v)},grid:{color:'#1e293b33'},beginAtZero:true}
+        }
+      }
+    });
+  },80);
 }
 
 /* ═══ LOAD ═══ */
